@@ -3,6 +3,6 @@ terraform {
         bucket = "aws-environment-terraform"
         key = "aws-environment/terraform.tfstate"
         region = "us-east-1"
-        encrypt = "true"
+        encrypt = true
     }
 }

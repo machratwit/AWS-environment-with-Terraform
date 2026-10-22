@@ -65,7 +65,7 @@ resource "aws_route_table" "public" {
 
     route {
     cidr_block = "0.0.0.0/0"
-    internet_gateway_id = aws_internet_gateway.main.id
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {
@@ -74,12 +74,12 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public_a" {
-    subnet_id = aws_subnet.private_a.id
+    subnet_id = aws_subnet.public_a.id
     route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "public_b" {
-    subnet_id = aws_subnet.private_b.id
+    subnet_id = aws_subnet.public_b.id
     route_table_id = aws_route_table.public.id
 }
 

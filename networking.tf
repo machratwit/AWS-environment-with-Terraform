@@ -93,6 +93,8 @@ resource "aws_eip" "nat" {
   }
 }
 
+
+/*
 # NAT Gateway in public subnet A 
 resource "aws_nat_gateway" "main" {
     allocation_id = aws_eip.nat.id
@@ -104,7 +106,7 @@ resource "aws_nat_gateway" "main" {
     Name = "main-nat"
   }
 }    
-
+*/
 # Private route table
 
 resource "aws_route_table" "private" {

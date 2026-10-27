@@ -24,8 +24,8 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-    name = "main-ec2-aws_iam_instance_profile"
-    role = aws_iam_role.name
+    name = "main-ec2-instance-profile"
+    role = aws_iam_role.ec2_ssm_role.name
 }
 
 # Security Group for the ALB
@@ -117,4 +117,41 @@ resource "aws_lb_target_group" "app" {
   tags = {
     Name = "main-app-tg"
   }
+}
+
+# HTTP listener
+resource "aws_lb_listener" "http" {
+    load_balance_arn = "aws_lb.app.arn"
+    port = "80"
+    protocol = "HTTP"
+    default_action {
+        type = "forward"
+        target_group_arn = "aws_lb_target_group.app.arn"
+    }
+}
+
+# EC2 Instance in Private subnet
+resource "aws_instance" "app" {
+    ami = data.aws_ssm_parameter.al2023_ami.value
+    instance_type = "t3.micro"
+    subnet_id = aws_subnet.private_a.id
+    vpc_security_group_ids = [aws_security_group.app.id]
+    iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+    associate_public_ip_address = false
+
+    user_data = file("${path.module}/userdata.sh")
+
+    depends_on = [
+        aws_iam_role_policy_attachment.ssm_core
+    ]
+    tags = {
+    Name = "main-private-app"
+  }
+}
+
+
+resource "aws_lb_target_group_attachment" "app" {
+  target_group_arn = aws_lb_target_group.app.arn
+  target_id        = aws_instance.app.id
+  port             = 8080
 }

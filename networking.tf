@@ -83,6 +83,7 @@ resource "aws_route_table_association" "public_b" {
     route_table_id = aws_route_table.public.id
 }
 
+/*
 # Elastic IP for NAT Gateway
 
 resource "aws_eip" "nat" {
@@ -94,7 +95,7 @@ resource "aws_eip" "nat" {
 }
 
 
-/*
+
 # NAT Gateway in public subnet A 
 resource "aws_nat_gateway" "main" {
     allocation_id = aws_eip.nat.id
@@ -107,17 +108,14 @@ resource "aws_nat_gateway" "main" {
   }
 }    
 */
+
+
 # Private route table
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main-vpc.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
-
-  tags = {
+   tags = {
     Name = "private-rt"
   }
 }
@@ -130,4 +128,62 @@ resource "aws_route_table_association" "private_a" {
 resource "aws_route_table_association" "private_b" {
   subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private.id
+}
+
+data "aws_region" "current" {}
+
+resource "aws_security_group" "vpc_endpoints" {
+  name        = "main-vpc-endpoints-sg"
+  description = "Allow HTTPS from private application instances"
+  vpc_id      = aws_vpc.main-vpc.id
+
+  tags = {
+    Name = "main-vpc-endpoints-sg"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "endpoint_https_from_app" {
+  security_group_id            = aws_security_group.vpc_endpoints.id
+  referenced_security_group_id = aws_security_group.app.id
+
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+  description = "HTTPS from application instances"
+}
+
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id              = aws_vpc.main-vpc.id
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.ssm"
+  vpc_endpoint_type   = "Interface"
+
+  subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = {
+    Name = "main-ssm-endpoint"
+  }
+}
+
+resource "aws_vpc_endpoint" "ssmmessages" {
+  vpc_id            = aws_vpc.main-vpc.id
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.ssmmessages"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = [
+    aws_subnet.private_a.id, 
+    aws_subnet.private_b.id
+  ]
+
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = {
+    Name = "main-ssmmessages-endpoint"
+  }
 }

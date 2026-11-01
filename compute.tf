@@ -6,16 +6,16 @@ data "aws_ssm_parameter" "al2023_ami" {
 resource "aws_iam_role" "ec2_ssm_role" {
     name = "main-ec2-ssm-role"
 
-    assume_role_policy = jsonencode{
+    assume_role_policy = jsonencode({
         Version = "2012-10-17"
         Statement = [{
             Effect = "Allow"
             Principal = {
                 Service = "ec2.amazonaws.com"
             }
-            Action = "sts:AssumeRole
+            Action = "sts:AssumeRole"
         }]
-    }
+    })
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_core" {
@@ -34,6 +34,8 @@ resource "aws_security_group" "alb" {
     description = "Public web traffic to the load balancer"
     vpc_id      = aws_vpc.main-vpc.id
 
+    egress = []
+
     tags = {
         Name = "main-alb-sg"
     }
@@ -41,7 +43,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_vpc_security_group_ingress_rule" "alb-http" {
     security_group_id = aws_security_group.alb.id
-    cidr_ipv4   = "10.0.0.0/8"
+    cidr_ipv4   = "0.0.0.0/0"
     from_port   = 80
     to_port     = 80
     ip_protocol = "tcp"
@@ -63,6 +65,8 @@ resource "aws_security_group" "app" {
   description = "Private application, accessible only through ALB"
   vpc_id      = aws_vpc.main-vpc.id
 
+  egress = []
+
   tags = {
     Name = "main-app-sg"
   }
@@ -77,11 +81,13 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
     description                  = "Application traffic from ALB only"
 }
 
-resource "aws_vpc_security_group_egress_rule" "app_outbound" {
-    security_group_id = aws_security_group.app.id
-    cidr_ipv4         = "0.0.0.0/0"
-    ip_protocol       = "-1"
-    description       = "Outbound access for updates and Systems Manager"
+resource "aws_vpc_security_group_egress_rule" "app_to_endpoints" {
+  security_group_id            = aws_security_group.app.id
+  referenced_security_group_id = aws_security_group.vpc_endpoints.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "HTTPS to Systems Manager VPC endpoints"
 }
 
 
@@ -90,8 +96,9 @@ resouce "aws_lb" "app" {
     name                = "main-app-alb"
     internal            = false
     load_balancer_type  = "application"
-    security_group      = [aws_security_group.alb.id]
-    subnet              = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    security_groups      = [aws_security_group.alb.id]
+    subnets              = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    
     tags{
         Name = "main-app-alb"
     }
@@ -121,12 +128,12 @@ resource "aws_lb_target_group" "app" {
 
 # HTTP listener
 resource "aws_lb_listener" "http" {
-    load_balance_arn = "aws_lb.app.arn"
+    load_balancer_arn = "aws_lb.app.arn"
     port = "80"
     protocol = "HTTP"
     default_action {
         type = "forward"
-        target_group_arn = "aws_lb_target_group.app.arn"
+        target_group_arn = aws_lb_target_group.app.arn
     }
 }
 
@@ -142,7 +149,9 @@ resource "aws_instance" "app" {
     user_data = file("${path.module}/userdata.sh")
 
     depends_on = [
-        aws_iam_role_policy_attachment.ssm_core
+        aws_iam_role_policy_attachment.ssm_core,
+        aws_vpc_endpoint.ssm,
+        aws_vpc_endpoint.ssmmessages
     ]
     tags = {
     Name = "main-private-app"

@@ -114,7 +114,12 @@ resource "aws_nat_gateway" "main" {
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main-vpc.id
-
+/*
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+*/
   tags = {
     Name = "private-rt"
   }
@@ -150,6 +155,17 @@ resource "aws_vpc_security_group_ingress_rule" "endpoint_https_from_app" {
   to_port     = 443
   ip_protocol = "tcp"
   description = "HTTPS from application instances"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_https_outbound" {
+  security_group_id = aws_security_group.app.id
+
+  cidr_ipv4   = "0.0.0.0/0"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+
+  description = "Allow outbound HTTPS for package downloads"
 }
 
 resource "aws_vpc_endpoint" "ssm" {

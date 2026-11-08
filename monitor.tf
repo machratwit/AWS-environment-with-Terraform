@@ -1,6 +1,6 @@
 resource "aws_cloudwatch_log_group" "app" {
-    name = /demo-app/application
-    retention_in_days = 14
+  name              = "/demo-app/application"
+  retention_in_days = 14
 }
 
 resource "aws_cloudwatch_log_group" "system" {
@@ -28,10 +28,10 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   metric_name = "CPUUtilization"
   statistic   = "Average"
 
-  period              = 300
-  evaluation_periods  = 1
-  threshold           = 80
-  treat_missing_data  = "notBreaching"
+  period             = 300
+  evaluation_periods = 1
+  threshold          = 80
+  treat_missing_data = "notBreaching"
 
   dimensions = {
     InstanceId = aws_instance.app.id

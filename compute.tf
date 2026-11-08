@@ -145,13 +145,18 @@ resource "aws_instance" "app" {
   vpc_security_group_ids      = [aws_security_group.app.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   associate_public_ip_address = false
-
+ user_data_replace_on_change = true
+ 
   user_data = file("${path.module}/userdata.sh")
 
   depends_on = [
     aws_iam_role_policy_attachment.ssm_core,
     aws_vpc_endpoint.ssm,
-    aws_vpc_endpoint.ssmmessages
+    aws_vpc_endpoint.ssmmessages,
+    aws_iam_role_policy_attachment.cloudwatch_agent,
+    aws_cloudwatch_log_group.app,
+    aws_cloudwatch_log_group.system,
+    aws_cloudwatch_log_group.cloud_init
   ]
   tags = {
     Name = "main-private-app"

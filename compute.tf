@@ -43,7 +43,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_vpc_security_group_ingress_rule" "alb-http" {
   security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.allowed_http_cidr
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
@@ -140,7 +140,7 @@ resource "aws_lb_listener" "http" {
 # EC2 Instance in Private subnet
 resource "aws_instance" "app" {
   ami                         = data.aws_ssm_parameter.al2023_ami.value
-  instance_type               = "t3.micro"
+  instance_type               = var.instance_type
   subnet_id                   = aws_subnet.private_a.id
   vpc_security_group_ids      = [aws_security_group.app.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
@@ -158,6 +158,20 @@ resource "aws_instance" "app" {
     aws_cloudwatch_log_group.system,
     aws_cloudwatch_log_group.cloud_init
   ]
+
+  root_block_device {
+    volume_size           = 8
+    volume_type           = "gp3"
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
   tags = {
     Name = "main-private-app"
   }

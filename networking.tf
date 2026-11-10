@@ -83,7 +83,7 @@ resource "aws_route_table_association" "public_b" {
   route_table_id = aws_route_table.public.id
 }
 
-/*
+
 # Elastic IP for NAT Gateway
 
 resource "aws_eip" "nat" {
@@ -98,28 +98,28 @@ resource "aws_eip" "nat" {
 
 # NAT Gateway in public subnet A 
 resource "aws_nat_gateway" "main" {
-    allocation_id = aws_eip.nat.id
-    subnet_id = aws_subnet.public_a.id
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_a.id
 
-    depends_on = [aws_internet_gateway.main]
-   
-    tags = {
+  depends_on = [aws_internet_gateway.main]
+
+  tags = {
     Name = "main-nat"
   }
-}    
-*/
+}
+
 
 
 # Private route table
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main-vpc.id
-  /*
+
   route {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.main.id
   }
-*/
+
   tags = {
     Name = "private-rt"
   }

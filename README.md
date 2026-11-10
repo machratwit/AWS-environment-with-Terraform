@@ -139,22 +139,15 @@ The diagram is illustrative: the configuration creates interface endpoints for S
 - Terraform 1.10 or later.
 - An AWS account and credentials available through the AWS provider's standard credential chain (for example, an AWS CLI profile or environment credentials).
 - AWS permissions to create and manage the resources declared in this project.
-- An existing S3 bucket named `aws-environment-terraform` in `us-east-1`. The bucket is configured in [`backend.tf`](backend.tf) and must exist before `terraform init`; this project does not create it.
+- An existing S3 bucket in your region. The bucket is configured in [`backend.tf`](backend.tf) and must exist before `terraform init`
 
-The backend bucket and state key are fixed in the configuration, and the backend region is `us-east-1`. The AWS provider region is separately configurable. Terraform commands that access the backend or AWS resources require suitable credentials.
+The backend bucket and state key are fixed in the configuration, and the backend region is region. The AWS provider region is separately configurable. Terraform commands that access the backend or AWS resources require suitable credentials.
 
 ### Clone and configure
 
 ```sh
 git clone https://github.com/machratwit/AWS-environment-with-Terraform.git
 cd AWS-environment-with-Terraform
-```
-
-Optionally create a local `terraform.tfvars` file to set the AWS region and restrict public HTTP access. The file is ignored by Git:
-
-```hcl
-aws_region       = "us-east-1"
-allowed_http_cidr = "203.0.113.10/32" # Replace with your public IPv4 address
 ```
 
 `allowed_http_cidr` defaults to `0.0.0.0/0`, which allows HTTP from any IPv4 address. Restrict it to the intended client CIDR before deployment. Other declared variables include `vpc_cidr`, `instance_type`, and `log_retention_days`; subnet CIDRs and the backend settings are currently defined in the Terraform configuration.
@@ -173,9 +166,6 @@ terraform apply
 
 Review the plan before applying. This configuration creates billable resources, including an ALB, NAT gateway, Elastic IP, interface endpoints, EC2 instance, and CloudWatch resources. AWS charges may continue until the resources are destroyed.
 
-### Tests
-
-There is no automated test suite in the repository. `terraform fmt -check` and `terraform validate` provide formatting and configuration checks; `terraform plan` previews the proposed AWS changes.
 
 ## Usage examples
 
@@ -256,9 +246,9 @@ The implementation provides concrete practice with Terraform-based AWS provision
 
 Personal takeaways cannot be verified from code. Add your own reflection before presenting this as a first-person learning statement:
 
-- **New tools or concepts I learned:** [Add your experience.]
-- **Most important debugging lesson:** [Describe a specific issue and how you resolved it.]
-- **What I would approach differently next time:** [Add your reflection.]
+- **New tools or concepts I learned:** I learned how to use Terraform to provision and manage AWS infrastructure through code. I gained practical experience configuring VPCs, public and private subnets, route tables, security groups, EC2 instances, and CloudWatch monitoring. I also learned how infrastructure components work together to create a secure and functional cloud environment.
+- **Most important debugging lesson:** One of my biggest debugging lessons was understanding how networking configurations affect connectivity between AWS resources. I learned that even when an EC2 instance is running, incorrect subnet routing, security-group rules, or network configurations can prevent access. Troubleshooting these settings helped me better understand how traffic flows through an AWS environment.
+- **What I would approach differently next time:** Next time, I would plan the infrastructure architecture more carefully before writing Terraform configurations. I would also break the implementation into smaller modules, use variables more consistently, and test each component before moving on to the next. This would make troubleshooting easier, improve organization, and make the infrastructure more maintainable.
 
 ## Future improvements
 
@@ -271,14 +261,6 @@ The following are proposed enhancements; they are not currently implemented:
 - Review default network access and provide safer deployment defaults for the ALB's public HTTP CIDR.
 - Consider VPC endpoints for additional AWS services if reducing NAT dependency is a goal.
 - Make the S3 backend bucket configurable or document its secure creation, versioning, and access controls.
-
-## Setup and contribution
-
-There is no `CONTRIBUTING.md` or established contribution workflow in this repository. To discuss an improvement, open a [GitHub issue](https://github.com/machratwit/AWS-environment-with-Terraform/issues); pull requests can include a concise description and the Terraform checks run. Avoid committing state files, saved plans, or local variable files.
-
-## License
-
-No `LICENSE` file is present, so the project's license is **not specified in this repository**. Do not assume that the code is available for reuse under an open-source license.
 
 ## Acknowledgments
 
